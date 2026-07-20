@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a5f7a">
+    <title>دفتر تتبع المتعلمين</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a5f7a;
+            --primary-light: #2c8da8;
+            --primary-dark: #0d3d4d;
+            --secondary: #e8b86d;
+            --success: #2d8a5e;
+            --danger: #c0392b;
+            --warning: #e67e22;
+            --info: #3498db;
+            --light: #f8f9fa;
+            --dark: #2c3e50;
+            --gray: #6c757d;
+            --border: #dee2e6;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --bottom-nav-height: 64px;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Noto Sans Arabic', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e8eef5 100%);
+            min-height: 100vh;
+            color: var(--dark);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior-y: none;
+            padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+        }
+        .mobile-header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            color: white;
+            padding: 16px 20px;
+            padding-top: calc(16px + var(--safe-top));
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+        .mobile-header h1 {
+            font-family: 'Noto Naskh Arabic', serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        .mobile-header .subtitle { font-size: 0.8rem; opacity: 0.8; margin-top: 2px; }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(var(--bottom-nav-height) + var(--safe-bottom));
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -2px 12px rgba(0,0,0,0.1);
+            z-index: 1000;
+            padding-bottom: var(--safe-bottom);
+        }
+        .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 12px;
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            background: none;
+            font-family: inherit;
+            flex: 1;
+            cursor: pointer;
+        }
+        .bottom-nav-item i { font-size: 1.3rem; margin-bottom: 3px; }
+        .bottom-nav-item.active { color: var(--primary); }
+        .bottom-nav-item.active i { transform: scale(1.1); }
+        .main-content { padding: 16px; max-width: 100%; }
+        .page-header {
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+        .page-title {
+            font-family: 'Noto Naskh Arabic', serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+        .page-subtitle { color: var(--gray); font-size: 0.85rem; margin-top: 4px; }
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 14px 18px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .card-header h3 {
+            font-family: 'Noto Naskh Arabic', serif;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .card-body { padding: 18px; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .stat-icon.blue { background: linear-gradient(135deg, #3498db, #2980b9); color: white; }
+        .stat-icon.green { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; }
+        .stat-icon.orange { background: linear-gradient(135deg, #f39c12, #e67e22); color: white; }
+        .stat-icon.red { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        .stat-icon.purple { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; }
+        .stat-icon.teal { background: linear-gradient(135deg, #1abc9c, #16a085); color: white; }
+        .stat-info h4 { font-size: 1.4rem; font-weight: 700; color: var(--dark); margin-bottom: 1px; }
+        .stat-info p { font-size: 0.75rem; color: var(--gray); }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+        th:first-child { border-radius: 0 8px 0 0; }
+        th:last-child { border-radius: 8px 0 0 0; }
+        td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        tr:hover td { background: #f8f9fa; }
+        tr:nth-child(even) td { background: #fafbfc; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 18px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            -webkit-touch-callout: none;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; }
+        .btn-success { background: linear-gradient(135deg, var(--success), #27ae60); color: white; }
+        .btn-danger { background: linear-gradient(135deg, var(--danger), #e74c3c); color: white; }
+        .btn-warning { background: linear-gradient(135deg, var(--warning), #f39c12); color: white; }
+        .btn-info { background: linear-gradient(135deg, var(--info), #2980b9); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+        .btn-lg { padding: 14px 28px; font-size: 1rem; width: 100%; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-group .btn { flex: 1; min-width: 0; }
+        .form-group { margin-bottom: 16px; }
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: var(--dark);
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: white;
+            -webkit-appearance: none;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 95, 122, 0.1);
+        }
+        select.form-control {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236c757d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 12px center;
+            padding-left: 32px;
+        }
+        .eval-btn {
+            width: 36px;
+            height: 36px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .eval-btn:active { transform: scale(0.9); }
+        .eval-btn.plus { color: var(--success); border-color: var(--success); }
+        .eval-btn.plus.active { background: var(--success); color: white; }
+        .eval-btn.minus { color: var(--danger); border-color: var(--danger); }
+        .eval-btn.minus.active { background: var(--danger); color: white; }
+        .eval-btn.neutral { color: var(--gray); border-color: var(--gray); font-size: 0.75rem; }
+        .eval-btn.neutral.active { background: var(--gray); color: white; }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        .badge-primary { background: #cce5ff; color: #004085; }
+        .score-display {
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+        }
+        .score-excellent { color: var(--success); }
+        .score-good { color: #27ae60; }
+        .score-average { color: var(--warning); }
+        .score-poor { color: var(--danger); }
+        .alert {
+            padding: 14px 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        .alert-success { background: #d4edda; color: #155724; border-right: 4px solid var(--success); }
+        .alert-danger { background: #f8d7da; color: #721c24; border-right: 4px solid var(--danger); }
+        .alert-warning { background: #fff3cd; color: #856404; border-right: 4px solid var(--warning); }
+        .alert-info { background: #d1ecf1; color: #0c5460; border-right: 4px solid var(--info); }
+        .row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+        .col-12 { grid-column: span 12; }
+        .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: 16px; }
+        .tab {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            color: var(--gray);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            flex: 1;
+            text-align: center;
+        }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .file-upload {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .file-upload:active { border-color: var(--primary); background: #f0f7fa; }
+        .file-upload i { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; }
+        .hidden { display: none !important; }
+        .section-title {
+            font-family: 'Noto Naskh Arabic', serif;
+            font-size: 1.1rem;
+            color: var(--primary-dark);
+            margin: 20px 0 12px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid var(--border);
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .info-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+        }
+        .info-item label {
+            font-size: 0.78rem;
+            color: var(--gray);
+            display: block;
+            margin-bottom: 3px;
+        }
+        .info-item span {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        .chart-container { position: relative; height: 250px; margin: 16px 0; }
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.9);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .loading-overlay.show { display: flex; }
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.3s ease forwards; }
+        @media print {
+            .mobile-header, .bottom-nav, .btn { display: none !important; }
+            .main-content { padding: 0; }
+            body { padding-bottom: 0; }
+        }
+        @media (min-width: 768px) {
+            .main-content { max-width: 768px; margin: 0 auto; }
+            .stats-grid { grid-template-columns: repeat(4, 1fr); }
+            .info-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="color: var(--primary); font-weight: 600;">جاري التحميل...</p>
+    </div>
+
+    <div class="mobile-header">
+        <h1>📚 دفتر تتبع المتعلمين</h1>
+        <div class="subtitle" id="headerSubtitle">السنة الدراسية 2025/2026</div>
+    </div>
+
+    <div class="main-content" id="mainContent"></div>
+
+    <nav class="bottom-nav">
+        <button class="bottom-nav-item active" onclick="showPage('dashboard')">
+            <i class="fas fa-home"></i>
+            <span>الرئيسية</span>
+        </button>
+        <button class="bottom-nav-item" onclick="showPage('evaluate')">
+            <i class="fas fa-clipboard-check"></i>
+            <span>تقييم</span>
+        </button>
+        <button class="bottom-nav-item" onclick="showPage('exams')">
+            <i class="fas fa-edit"></i>
+            <span>فروض</span>
+        </button>
+        <button class="bottom-nav-item" onclick="showPage('reports')">
+            <i class="fas fa-chart-bar"></i>
+            <span>تقارير</span>
+        </button>
+        <button class="bottom-nav-item" onclick="showPage('settings')">
+            <i class="fas fa-cog"></i>
+            <span>إعدادات</span>
+        </button>
+    </nav>
+
+    <script>
+
+
+// ==================== DATABASE ====================
+const DB_NAME = 'StudentTrackerDB';
+const DB_VERSION = 1;
+let db = null;
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => { db = request.result; resolve(db); };
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('classes')) db.createObjectStore('classes', { keyPath: 'id', autoIncrement: true });
+            if (!db.objectStoreNames.contains('students')) db.createObjectStore('students', { keyPath: 'id', autoIncrement: true });
+            if (!db.objectStoreNames.contains('sessions')) db.createObjectStore('sessions', { keyPath: 'id', autoIncrement: true });
+            if (!db.objectStoreNames.contains('evaluations')) db.createObjectStore('evaluations', { keyPath: 'id', autoIncrement: true });
+            if (!db.objectStoreNames.contains('exams')) db.createObjectStore('exams', { keyPath: 'id', autoIncrement: true });
+            if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+        };
+    });
+}
+
+async function getAll(storeName) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readonly');
+        const request = tx.objectStore(storeName).getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function getById(storeName, id) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readonly');
+        const request = tx.objectStore(storeName).get(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function add(storeName, data) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const request = tx.objectStore(storeName).add(data);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function put(storeName, data) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const request = tx.objectStore(storeName).put(data);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function deleteById(storeName, id) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const request = tx.objectStore(storeName).delete(id);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function getSetting(key) {
+    const result = await getById('settings', key);
+    return result ? result.value : null;
+}
+
+async function setSetting(key, value) {
+    await put('settings', { key, value });
+}
+
+async function initSettings() {
+    if (!await getSetting('academic_year')) await setSetting('academic_year', '2025/2026');
+    if (!await getSetting('current_trimester')) await setSetting('current_trimester', '1');
+}
+
+// ==================== CALCULATIONS ====================
+async function calculateActivityAverage(studentId, trimester) {
+    const sessions = await getAll('sessions');
+    const evaluations = await getAll('evaluations');
+    let sessionIds = sessions;
+    if (trimester) sessionIds = sessions.filter(s => s.trimester == trimester);
+    const sessionIdList = sessionIds.map(s => s.id);
+    const studentEvals = evaluations.filter(e => e.studentId == studentId && sessionIdList.includes(e.sessionId));
+    if (studentEvals.length === 0) return null;
+
+    const categories = ['notebook', 'participation', 'homework', 'oral'];
+    let totalPercent = 0, validCategories = 0;
+
+    for (const cat of categories) {
+        let plus = 0, total = 0;
+        for (const eval_ of studentEvals) {
+            if (eval_[cat] !== null && eval_[cat] !== undefined && eval_[cat] !== '') {
+                total++;
+                if (eval_[cat] === '+') plus++;
+            }
+        }
+        if (total > 0) { totalPercent += (plus / total) * 100; validCategories++; }
+    }
+    if (validCategories === 0) return null;
+    return Math.round((totalPercent / validCategories / 100) * 20 * 100) / 100;
+}
+
+async function calculateExamAverage(studentId, trimester) {
+    let exams = (await getAll('exams')).filter(e => e.studentId == studentId && e.score !== null && e.score !== '');
+    if (trimester) exams = exams.filter(e => e.trimester == trimester);
+    if (exams.length === 0) return null;
+    return Math.round((exams.reduce((a, b) => a + parseFloat(b.score), 0) / exams.length) * 100) / 100;
+}
+
+async function calculateFinalAverage(studentId, trimester) {
+    const activityAvg = await calculateActivityAverage(studentId, trimester);
+    const examAvg = await calculateExamAverage(studentId, trimester);
+    if (activityAvg === null && examAvg === null) return null;
+    if (activityAvg === null) return examAvg;
+    if (examAvg === null) return activityAvg;
+    return Math.round((activityAvg * 0.25 + examAvg * 0.75) * 100) / 100;
+}
+
+// ==================== APP STATE ====================
+let currentPage = 'dashboard';
+let currentClassId = null;
+let currentStudentId = null;
+let currentSessionId = null;
+let deferredPrompt = null;
+
+// ==================== PWA INSTALL ====================
+// ==================== NAVIGATION ====================
+function showPage(page) {
+    currentPage = page;
+    document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+    const pages = ['dashboard', 'evaluate', 'exams', 'reports', 'settings'];
+    const index = pages.indexOf(page);
+    if (index >= 0) document.querySelectorAll('.bottom-nav-item')[index].classList.add('active');
+    renderPage(page);
+    window.scrollTo(0, 0);
+}
+
+function showLoading(show) {
+    document.getElementById('loadingOverlay').classList.toggle('show', show);
+}
+
+// ==================== RENDER FUNCTIONS ====================
+async function renderPage(page) {
+    const container = document.getElementById('mainContent');
+    const year = await getSetting('academic_year') || '2025/2026';
+    document.getElementById('headerSubtitle').textContent = 'السنة الدراسية ' + year;
+
+    showLoading(true);
+    try {
+        switch(page) {
+            case 'dashboard': await renderDashboard(container); break;
+            case 'evaluate': await renderEvaluate(container); break;
+            case 'exams': await renderExams(container); break;
+            case 'reports': await renderReports(container); break;
+            case 'settings': await renderSettings(container); break;
+        }
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function renderDashboard(container) {
+    const classes = await getAll('classes');
+    const students = await getAll('students');
+    const sessions = await getAll('sessions');
+    const evaluations = await getAll('evaluations');
+    const totalEvals = evaluations.filter(e => e.notebook || e.participation || e.homework || e.oral).length;
+    const recentSessions = sessions.sort((a, b) => new Date(b.sessionDate) - new Date(a.sessionDate)).slice(0, 5);
+
+    container.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">لوحة التحكم</h1>
+                <p class="page-subtitle">نظرة عامة على النظام</p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card fade-in">
+                <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                <div class="stat-info"><h4>${students.length}</h4><p>المتعلمين</p></div>
+            </div>
+            <div class="stat-card fade-in">
+                <div class="stat-icon teal"><i class="fas fa-chalkboard"></i></div>
+                <div class="stat-info"><h4>${classes.length}</h4><p>الأقسام</p></div>
+            </div>
+            <div class="stat-card fade-in">
+                <div class="stat-icon orange"><i class="fas fa-calendar-check"></i></div>
+                <div class="stat-info"><h4>${sessions.length}</h4><p>الحصص</p></div>
+            </div>
+            <div class="stat-card fade-in">
+                <div class="stat-icon green"><i class="fas fa-clipboard-list"></i></div>
+                <div class="stat-info"><h4>${totalEvals}</h4><p>التقييمات</p></div>
+            </div>
+        </div>
+
+        <div class="btn-group" style="margin-bottom: 16px;">
+            <button class="btn btn-primary btn-lg" onclick="showPage('import')"><i class="fas fa-file-import"></i> استيراد المتعلمين</button>
+            <button class="btn btn-success btn-lg" onclick="showPage('evaluate')"><i class="fas fa-clipboard-check"></i> تقييم حصة</button>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chalkboard"></i> الأقسام</h3></div>
+            <div class="card-body">
+                ${classes.length === 0 ? `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> لا توجد أقسام. <button class="btn btn-sm btn-primary" onclick="showPage('import')">استيراد</button>
+                    </div>
+                ` : `
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>القسم</th><th>المستوى</th><th>العدد</th><th></th></tr></thead>
+                            <tbody>
+                                ${classes.map(c => {
+                                    const count = students.filter(s => s.classId == c.id).length;
+                                    return `<tr>
+                                        <td><strong>${escapeHtml(c.className)}</strong></td>
+                                        <td>${escapeHtml(c.level || '-')}</td>
+                                        <td><span class="badge badge-info">${count}</span></td>
+                                        <td><button class="btn btn-sm btn-info" onclick="viewClassReport(${c.id})"><i class="fas fa-chart-bar"></i></button></td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `}
+            </div>
+        </div>
+
+        ${recentSessions.length > 0 ? `
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-history"></i> آخر الحصص</h3></div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>التاريخ</th><th>القسم</th><th>الحصة</th><th>الأسدوس</th></tr></thead>
+                        <tbody>
+                            ${recentSessions.map(s => {
+                                const cls = classes.find(c => c.id == s.classId);
+                                return `<tr>
+                                    <td>${s.sessionDate}</td>
+                                    <td>${escapeHtml(cls ? cls.className : '-')}</td>
+                                    <td>${s.sessionNumber}</td>
+                                    <td><span class="badge badge-primary">${s.trimester == 1 ? 'الأول' : 'الثاني'}</span></td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        ` : ''}
+    `;
+}
+
+async function renderImport(container) {
+    container.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">استيراد المتعلمين</h1>
+                <p class="page-subtitle">رفع ملف Excel</p>
+            </div>
+        </div>
+        <div id="importAlert"></div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="file-upload" onclick="document.getElementById('excelFile').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3 style="margin-bottom:6px;color:var(--dark);font-size:1.1rem;">اضغط لاختيار الملف</h3>
+                    <p style="color:var(--gray);font-size:0.85rem;">.xlsx أو .xls</p>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none;" onchange="handleFileSelect(this)">
+                    <p id="fileName" style="margin-top:10px;color:var(--primary);font-weight:600;font-size:0.9rem;"></p>
+                </div>
+                <button class="btn btn-primary btn-lg" id="importBtn" onclick="importStudents()" disabled style="margin-top:16px;">
+                    <i class="fas fa-file-import"></i> استيراد البيانات
+                </button>
+                <div id="importPreview" style="margin-top:16px;"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-info-circle"></i> تعليمات</h3></div>
+            <div class="card-body" style="font-size:0.9rem;line-height:1.8;">
+                <p>📋 يجب أن يحتوي الملف على أوراق لكل قسم</p>
+                <p>📋 الأعمدة المطلوبة: ر.ت، الرمز، النسب، الاسم، النوع، تاريخ الازدياد</p>
+                <p>💡 يمكنك تصدير لائحة التلاميذ من نظام مسار مباشرة</p>
+            </div>
+        </div>
+    `;
+}
+
+let importData = null;
+
+function handleFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+    document.getElementById('fileName').textContent = file.name;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            importData = parseWorkbook(workbook);
+            showImportPreview(importData);
+            document.getElementById('importBtn').disabled = false;
+        } catch (err) {
+            showAlert('importAlert', 'danger', 'خطأ: ' + err.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function parseWorkbook(workbook) {
+    const result = [];
+    workbook.SheetNames.forEach(sheetName => {
+        const sheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        let className = sheetName.trim();
+        let level = '', academicYear = '';
+
+        for (let i = 0; i < Math.min(10, json.length); i++) {
+            const row = json[i];
+            if (!row) continue;
+            const rowStr = row.join(' ');
+            if (rowStr.includes('المستوى') || rowStr.includes('جذع') || rowStr.includes('باكالوريا')) {
+                for (const cell of row) {
+                    if (cell && (cell.includes('جذع') || cell.includes('باكالوريا') || cell.includes('أولى') || cell.includes('ثانية'))) {
+                        level = cell.toString().trim();
+                    }
+                }
+            }
+            if (rowStr.includes('السنة الدراسية')) {
+                const match = rowStr.match(/\d{4}\/\d{4}/);
+                if (match) academicYear = match[0];
+            }
+        }
+
+        let headerRow = -1;
+        for (let i = 0; i < Math.min(15, json.length); i++) {
+            const row = json[i];
+            if (row && row.some(cell => cell && (cell.toString().includes('ر.ت') || cell.toString().includes('الرمز') || cell.toString().includes('النسب')))) {
+                headerRow = i; break;
+            }
+        }
+        if (headerRow === -1) return;
+
+        const headers = json[headerRow].map(h => h ? h.toString().trim() : '');
+        const orderIdx = headers.findIndex(h => h.includes('ر.ت'));
+        const codeIdx = headers.findIndex(h => h.includes('رمز'));
+        const lastNameIdx = headers.findIndex(h => h.includes('نسب') && !h.includes('الإسم'));
+        const firstNameIdx = headers.findIndex(h => h.includes('إسم') || h.includes('الاسم'));
+        const genderIdx = headers.findIndex(h => h.includes('نوع'));
+        const birthDateIdx = headers.findIndex(h => h.includes('تاريخ') || h.includes('ازدياد'));
+        const birthPlaceIdx = headers.findIndex(h => h.includes('مكان'));
+
+        for (let i = headerRow + 1; i < json.length; i++) {
+            const row = json[i];
+            if (!row || row.length < 3) continue;
+            const orderNum = orderIdx >= 0 ? parseInt(row[orderIdx]) : i - headerRow;
+            if (!orderNum || isNaN(orderNum)) continue;
+            const lastName = lastNameIdx >= 0 ? row[lastNameIdx] : '';
+            if (!lastName) continue;
+
+            result.push({
+                class: className, level, academicYear,
+                orderNumber: orderNum,
+                massarNumber: codeIdx >= 0 ? row[codeIdx].toString().trim() : '',
+                lastName: lastName.toString().trim(),
+                firstName: firstNameIdx >= 0 ? row[firstNameIdx].toString().trim() : '',
+                gender: genderIdx >= 0 ? row[genderIdx].toString().trim() : '',
+                birthDate: birthDateIdx >= 0 ? formatDate(row[birthDateIdx]) : '',
+                birthPlace: birthPlaceIdx >= 0 ? row[birthPlaceIdx].toString().trim() : ''
+            });
+        }
+    });
+    return result;
+}
+
+function formatDate(dateVal) {
+    if (!dateVal) return '';
+    if (typeof dateVal === 'number') {
+        const epoch = new Date(1899, 11, 30);
+        const d = new Date(epoch.getTime() + dateVal * 86400000);
+        return d.toISOString().split('T')[0];
+    }
+    const d = new Date(dateVal);
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    return dateVal.toString();
+}
+
+function showImportPreview(data) {
+    if (!data || data.length === 0) {
+        document.getElementById('importPreview').innerHTML = '<div class="alert alert-warning">لم يتم العثور على بيانات</div>';
+        return;
+    }
+    const classes = {};
+    data.forEach(s => { if (!classes[s.class]) classes[s.class] = 0; classes[s.class]++; });
+    document.getElementById('importPreview').innerHTML = `
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> 
+            <strong>${data.length}</strong> متعلم في <strong>${Object.keys(classes).length}</strong> قسم
+            <ul style="margin-top:8px;margin-right:16px;font-size:0.85rem;">
+                ${Object.entries(classes).map(([cls, count]) => `<li>${escapeHtml(cls)}: ${count}</li>`).join('')}
+            </ul>
+        </div>
+    `;
+}
+
+async function importStudents() {
+    if (!importData || importData.length === 0) return;
+    const btn = document.getElementById('importBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الاستيراد...';
+
+    try {
+        const classMap = {};
+        for (const student of importData) {
+            if (!classMap[student.class]) {
+                const existing = (await getAll('classes')).find(c => c.className === student.class);
+                if (existing) {
+                    classMap[student.class] = existing.id;
+                } else {
+                    classMap[student.class] = await add('classes', {
+                        className: student.class, level: student.level, academicYear: student.academicYear
+                    });
+                }
+            }
+            const classId = classMap[student.class];
+            const existingStudents = await getAll('students');
+            const exists = existingStudents.find(s => s.massarNumber === student.massarNumber && s.classId === classId);
+            if (!exists) {
+                await add('students', {
+                    classId, orderNumber: student.orderNumber, massarNumber: student.massarNumber,
+                    lastName: student.lastName, firstName: student.firstName,
+                    gender: student.gender, birthDate: student.birthDate, birthPlace: student.birthPlace
+                });
+            }
+        }
+        showAlert('importAlert', 'success', 'تم الاستيراد بنجاح!');
+        setTimeout(() => showPage('dashboard'), 1500);
+    } catch (err) {
+        showAlert('importAlert', 'danger', 'خطأ: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-file-import"></i> استيراد البيانات';
+    }
+}
+
+function showAlert(containerId, type, message) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.innerHTML = `<div class="alert alert-${type}"><i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'times-circle'}"></i> ${message}</div>`;
+        setTimeout(() => { if (container) container.innerHTML = ''; }, 4000);
+    }
+}
+
+async function renderEvaluate(container) {
+    const classes = await getAll('classes');
+    const students = await getAll('students');
+    const sessions = await getAll('sessions');
+    const evaluations = await getAll('evaluations');
+    const currentTrim = parseInt(await getSetting('current_trimester') || '1');
+
+    if (currentSessionId) {
+        const session = sessions.find(s => s.id == currentSessionId);
+        if (!session) { currentSessionId = null; return renderEvaluate(container); }
+
+        const cls = classes.find(c => c.id == session.classId);
+        const classStudents = students.filter(s => s.classId == session.classId).sort((a, b) => a.orderNumber - b.orderNumber);
+        const existingEvals = {};
+        evaluations.filter(e => e.sessionId == currentSessionId).forEach(e => { existingEvals[e.studentId] = e; });
+
+        container.innerHTML = `
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">تقييم الحصة</h1>
+                    <p class="page-subtitle">${escapeHtml(cls ? cls.className : '')} - ${session.sessionDate}</p>
+                </div>
+            </div>
+            <div id="evalAlert"></div>
+
+            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                <span class="badge badge-info">الحصة ${session.sessionNumber}</span>
+                <span class="badge badge-primary">${session.trimester == 1 ? 'الأسدوس الأول' : 'الأسدوس الثاني'}</span>
+            </div>
+
+            <div class="card">
+                <div class="card-body" style="padding:12px;">
+                    <div class="table-responsive">
+                        <table style="font-size:0.82rem;">
+                            <thead>
+                                <tr>
+                                    <th>ر.ت</th>
+                                    <th style="text-align:right;">النسب والاسم</th>
+                                    <th>الدفتر</th>
+                                    <th>المشاركة</th>
+                                    <th>الواجبات</th>
+                                    <th>الشفوي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${classStudents.map(s => {
+                                    const eval_ = existingEvals[s.id] || {};
+                                    return `<tr>
+                                        <td>${s.orderNumber}</td>
+                                        <td style="text-align:right;font-weight:600;font-size:0.8rem;">${escapeHtml(s.lastName)} ${escapeHtml(s.firstName.substring(0, 8))}</td>
+                                        <td>${renderEvalButtons(s.id, 'notebook', eval_.notebook)}</td>
+                                        <td>${renderEvalButtons(s.id, 'participation', eval_.participation)}</td>
+                                        <td>${renderEvalButtons(s.id, 'homework', eval_.homework)}</td>
+                                        <td>${renderEvalButtons(s.id, 'oral', eval_.oral)}</td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-success btn-lg" style="margin-top:16px;" onclick="saveEvaluations()">
+                        <i class="fas fa-save"></i> حفظ التقييمات
+                    </button>
+                    <button class="btn btn-primary" style="margin-top:8px;" onclick="currentSessionId=null;renderEvaluate(document.getElementById('mainContent'))">
+                        <i class="fas fa-arrow-right"></i> العودة
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    if (currentClassId) {
+        const cls = classes.find(c => c.id == currentClassId);
+        if (!cls) { currentClassId = null; return renderEvaluate(container); }
+
+        const classSessions = sessions.filter(s => s.classId == currentClassId).sort((a, b) => {
+            const d = new Date(b.sessionDate) - new Date(a.sessionDate);
+            return d !== 0 ? d : b.sessionNumber - a.sessionNumber;
+        });
+
+        container.innerHTML = `
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">إنشاء حصة</h1>
+                    <p class="page-subtitle">${escapeHtml(cls.className)}</p>
+                </div>
+            </div>
+            <div id="sessionAlert"></div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label">التاريخ</label>
+                                <input type="date" id="sessionDate" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label">رقم الحصة</label>
+                                <input type="number" id="sessionNumber" class="form-control" value="1" min="1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">الأسدوس</label>
+                        <select id="sessionTrimester" class="form-control">
+                            <option value="1" ${currentTrim == 1 ? 'selected' : ''}>الأول</option>
+                            <option value="2" ${currentTrim == 2 ? 'selected' : ''}>الثاني</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-success btn-lg" onclick="createSession()">
+                        <i class="fas fa-plus"></i> إنشاء الحصة
+                    </button>
+                    <button class="btn btn-primary" style="margin-top:8px;" onclick="currentClassId=null;renderEvaluate(document.getElementById('mainContent'))">
+                        <i class="fas fa-arrow-right"></i> تغيير القسم
+                    </button>
+                </div>
+            </div>
+
+            ${classSessions.length > 0 ? `
+            <div class="card">
+                <div class="card-header"><h3><i class="fas fa-history"></i> الحصص السابقة</h3></div>
+                <div class="card-body" style="padding:12px;">
+                    <div class="table-responsive">
+                        <table style="font-size:0.82rem;">
+                            <thead><tr><th>التاريخ</th><th>الحصة</th><th>الأسدوس</th><th></th></tr></thead>
+                            <tbody>
+                                ${classSessions.map(s => `
+                                    <tr>
+                                        <td>${s.sessionDate}</td>
+                                        <td>${s.sessionNumber}</td>
+                                        <td><span class="badge badge-primary">${s.trimester == 1 ? 'الأول' : 'الثاني'}</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning" onclick="currentSessionId=${s.id};renderEvaluate(document.getElementById('mainContent'))"><i class="fas fa-edit"></i></button>
+                                            <button class="btn btn-sm btn-danger" onclick="deleteSession(${s.id})"><i class="fas fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+        `;
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">تقييم الحصة</h1>
+                <p class="page-subtitle">اختيار القسم</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                ${classes.length === 0 ? `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> لا توجد أقسام.
+                        <button class="btn btn-sm btn-primary" onclick="showPage('import')">استيراد</button>
+                    </div>
+                ` : `
+                    <div class="form-group">
+                        <label class="form-label">القسم</label>
+                        <select class="form-control" onchange="currentClassId=parseInt(this.value);renderEvaluate(document.getElementById('mainContent'))">
+                            <option value="">-- اختر القسم --</option>
+                            ${classes.map(c => `<option value="${c.id}">${escapeHtml(c.className)}</option>`).join('')}
+                        </select>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+function renderEvalButtons(studentId, category, currentValue) {
+    const val = currentValue || '';
+    return `
+        <div class="eval-btn-group" style="display:flex;gap:4px;justify-content:center;" data-student="${studentId}" data-category="${category}" data-value="${val}">
+            <button type="button" class="eval-btn plus ${val === '+' ? 'active' : ''}" onclick="setEval(this, '+')">+</button>
+            <button type="button" class="eval-btn minus ${val === '-' ? 'active' : ''}" onclick="setEval(this, '-')">-</button>
+            <button type="button" class="eval-btn neutral ${val === '' ? 'active' : ''}" onclick="setEval(this, '')">Ø</button>
+        </div>
+    `;
+}
+
+function setEval(btn, value) {
+    const group = btn.parentElement;
+    group.querySelectorAll('.eval-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    group.dataset.value = value;
+}
+
+async function createSession() {
+    const date = document.getElementById('sessionDate').value;
+    const number = parseInt(document.getElementById('sessionNumber').value);
+    const trimester = parseInt(document.getElementById('sessionTrimester').value);
+    if (!date || !number) { showAlert('sessionAlert', 'warning', 'يرجى ملء جميع الحقول'); return; }
+
+    currentSessionId = await add('sessions', {
+        classId: currentClassId, sessionDate: date, sessionNumber: number, trimester: trimester, notes: ''
+    });
+    renderEvaluate(document.getElementById('mainContent'));
+}
+
+async function saveEvaluations() {
+    const groups = document.querySelectorAll('.eval-btn-group');
+    const evaluations = {};
+    groups.forEach(g => {
+        const studentId = parseInt(g.dataset.student);
+        const category = g.dataset.category;
+        const value = g.dataset.value || null;
+        if (!evaluations[studentId]) evaluations[studentId] = {};
+        evaluations[studentId][category] = value;
+    });
+
+    for (const studentId in evaluations) {
+        const existing = (await getAll('evaluations')).find(e => e.sessionId == currentSessionId && e.studentId == parseInt(studentId));
+        const evalData = {
+            sessionId: currentSessionId, studentId: parseInt(studentId),
+            notebook: evaluations[studentId].notebook || null,
+            participation: evaluations[studentId].participation || null,
+            homework: evaluations[studentId].homework || null,
+            oral: evaluations[studentId].oral || null,
+            note: null
+        };
+        if (existing) { evalData.id = existing.id; await put('evaluations', evalData); }
+        else { await add('evaluations', evalData); }
+    }
+    showAlert('evalAlert', 'success', 'تم الحفظ بنجاح!');
+}
+
+async function deleteSession(sessionId) {
+    if (!confirm('حذف الحصة وجميع تقييماتها؟')) return;
+    const evals = await getAll('evaluations');
+    for (const e of evals.filter(ev => ev.sessionId == sessionId)) await deleteById('evaluations', e.id);
+    await deleteById('sessions', sessionId);
+    renderEvaluate(document.getElementById('mainContent'));
+}
+
+async function renderExams(container) {
+    const classes = await getAll('classes');
+    const students = await getAll('students');
+    const exams = await getAll('exams');
+    const currentTrim = parseInt(await getSetting('current_trimester') || '1');
+
+    if (currentClassId) {
+        const cls = classes.find(c => c.id == currentClassId);
+        if (!cls) { currentClassId = null; return renderExams(container); }
+
+        const classStudents = students.filter(s => s.classId == currentClassId).sort((a, b) => a.orderNumber - b.orderNumber);
+        const trimester = parseInt(document.getElementById('examTrimester')?.value || currentTrim);
+
+        const existingScores = {};
+        exams.filter(e => e.classId == currentClassId && e.trimester == trimester).forEach(e => {
+            if (!existingScores[e.studentId]) existingScores[e.studentId] = {};
+            existingScores[e.studentId][e.examNumber] = e.score;
+        });
+
+        container.innerHTML = `
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">الفروض الكتابية</h1>
+                    <p class="page-subtitle">${escapeHtml(cls.className)}</p>
+                </div>
+            </div>
+            <div id="examAlert"></div>
+
+            <div class="tabs">
+                <div class="tab ${trimester == 1 ? 'active' : ''}" onclick="document.getElementById('examTrimester').value=1;renderExams(document.getElementById('mainContent'))">الأسدوس الأول</div>
+                <div class="tab ${trimester == 2 ? 'active' : ''}" onclick="document.getElementById('examTrimester').value=2;renderExams(document.getElementById('mainContent'))">الأسدوس الثاني</div>
+            </div>
+            <input type="hidden" id="examTrimester" value="${trimester}">
+
+            <div class="card">
+                <div class="card-body" style="padding:12px;">
+                    <div class="table-responsive">
+                        <table style="font-size:0.8rem;">
+                            <thead>
+                                <tr>
+                                    <th>ر.ت</th>
+                                    <th style="text-align:right;">النسب والاسم</th>
+                                    <th>فرض 1</th>
+                                    <th>فرض 2</th>
+                                    <th>فرض 3</th>
+                                    <th>المعدل</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${classStudents.map(s => {
+                                    const s1 = existingScores[s.id]?.[1];
+                                    const s2 = existingScores[s.id]?.[2];
+                                    const s3 = existingScores[s.id]?.[3];
+                                    const scores = [s1, s2, s3].filter(v => v !== undefined && v !== null && v !== '');
+                                    const avg = scores.length > 0 ? Math.round((scores.reduce((a, b) => a + parseFloat(b), 0) / scores.length) * 100) / 100 : null;
+                                    return `<tr>
+                                        <td>${s.orderNumber}</td>
+                                        <td style="text-align:right;font-weight:600;font-size:0.78rem;">${escapeHtml(s.lastName)} ${escapeHtml(s.firstName.substring(0, 6))}</td>
+                                        <td><input type="number" class="form-control exam-score" data-student="${s.id}" data-exam="1" style="width:60px;text-align:center;padding:8px;font-size:0.85rem;" value="${s1 !== undefined ? s1 : ''}" min="0" max="20" step="0.01" placeholder="-"></td>
+                                        <td><input type="number" class="form-control exam-score" data-student="${s.id}" data-exam="2" style="width:60px;text-align:center;padding:8px;font-size:0.85rem;" value="${s2 !== undefined ? s2 : ''}" min="0" max="20" step="0.01" placeholder="-"></td>
+                                        <td><input type="number" class="form-control exam-score" data-student="${s.id}" data-exam="3" style="width:60px;text-align:center;padding:8px;font-size:0.85rem;" value="${s3 !== undefined ? s3 : ''}" min="0" max="20" step="0.01" placeholder="-"></td>
+                                        <td>${avg !== null ? `<span class="score-display ${avg >= 16 ? 'score-excellent' : avg >= 12 ? 'score-good' : avg >= 10 ? 'score-average' : 'score-poor'}">${avg}</span>` : '<span class="badge badge-warning">-</span>'}</td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-success btn-lg" style="margin-top:16px;" onclick="saveExams()">
+                        <i class="fas fa-save"></i> حفظ النقاط
+                    </button>
+                    <button class="btn btn-primary" style="margin-top:8px;" onclick="currentClassId=null;renderExams(document.getElementById('mainContent'))">
+                        <i class="fas fa-arrow-right"></i> تغيير القسم
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">الفروض الكتابية</h1>
+                <p class="page-subtitle">اختيار القسم</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                ${classes.length === 0 ? `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> لا توجد أقسام.
+                        <button class="btn btn-sm btn-primary" onclick="showPage('import')">استيراد</button>
+                    </div>
+                ` : `
+                    <div class="form-group">
+                        <label class="form-label">القسم</label>
+                        <select class="form-control" onchange="currentClassId=parseInt(this.value);renderExams(document.getElementById('mainContent'))">
+                            <option value="">-- اختر القسم --</option>
+                            ${classes.map(c => `<option value="${c.id}">${escapeHtml(c.className)}</option>`).join('')}
+                        </select>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+async function saveExams() {
+    const trimester = parseInt(document.getElementById('examTrimester').value);
+    const inputs = document.querySelectorAll('.exam-score');
+
+    for (const input of inputs) {
+        const studentId = parseInt(input.dataset.student);
+        const examNumber = parseInt(input.dataset.exam);
+        const score = input.value;
+
+        const existing = (await getAll('exams')).find(e => e.studentId == studentId && e.trimester == trimester && e.examNumber == examNumber);
+
+        if (score === '' || score === null || score === undefined) {
+            if (existing) await deleteById('exams', existing.id);
+            continue;
+        }
+
+        const scoreVal = parseFloat(score);
+        if (isNaN(scoreVal) || scoreVal < 0 || scoreVal > 20) continue;
+
+        const examData = { studentId, classId: currentClassId, trimester, examNumber, score: scoreVal, maxScore: 20 };
+        if (existing) { examData.id = existing.id; await put('exams', examData); }
+        else { await add('exams', examData); }
+    }
+    showAlert('examAlert', 'success', 'تم الحفظ بنجاح!');
+    setTimeout(() => renderExams(document.getElementById('mainContent')), 1000);
+}
+
+async function renderReports(container) {
+    const classes = await getAll('classes');
+
+    if (currentStudentId) { await renderStudentReport(container); return; }
+    if (currentClassId) { await renderClassReport(container); return; }
+
+    container.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">التقارير</h1>
+                <p class="page-subtitle">تقارير المتعلمين والأقسام</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-user"></i> تقرير متعلم</h3></div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">القسم</label>
+                    <select id="reportClassSelect" class="form-control" onchange="loadReportStudents()">
+                        <option value="">-- اختر القسم --</option>
+                        ${classes.map(c => `<option value="${c.id}">${escapeHtml(c.className)}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">المتعلم</label>
+                    <select id="reportStudentSelect" class="form-control">
+                        <option value="">-- اختر المتعلم --</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-lg" onclick="viewSelectedStudentReport()">
+                    <i class="fas fa-eye"></i> عرض التقرير
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-users"></i> تقرير قسم</h3></div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">القسم</label>
+                    <select id="reportClassSelect2" class="form-control">
+                        <option value="">-- اختر القسم --</option>
+                        ${classes.map(c => `<option value="${c.id}">${escapeHtml(c.className)}</option>`).join('')}
+                    </select>
+                </div>
+                <button class="btn btn-info btn-lg" onclick="viewSelectedClassReport()">
+                    <i class="fas fa-chart-bar"></i> عرض تقرير القسم
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+async function loadReportStudents() {
+    const classId = document.getElementById('reportClassSelect').value;
+    const select = document.getElementById('reportStudentSelect');
+    if (!classId) { select.innerHTML = '<option value="">-- اختر المتعلم --</option>'; return; }
+    const students = (await getAll('students')).filter(s => s.classId == classId).sort((a, b) => a.orderNumber - b.orderNumber);
+    select.innerHTML = '<option value="">-- اختر المتعلم --</option>' + 
+        students.map(s => `<option value="${s.id}">${s.orderNumber}. ${escapeHtml(s.lastName)} ${escapeHtml(s.firstName)}</option>`).join('');
+}
+
+function viewSelectedStudentReport() {
+    const id = document.getElementById('reportStudentSelect').value;
+    if (!id) { alert('اختر متعلماً'); return; }
+    viewStudentReport(parseInt(id));
+}
+
+function viewSelectedClassReport() {
+    const id = document.getElementById('reportClassSelect2').value;
+    if (!id) { alert('اختر قسماً'); return; }
+    viewClassReport(parseInt(id));
+}
+
+async function renderStudentReport(container) {
+    const student = await getById('students', currentStudentId);
+    if (!student) { currentStudentId = null; return renderReports(container); }
+
+    const cls = await getById('classes', student.classId);
+    const sessions = await getAll('sessions');
+    const evaluations = await getAll('evaluations');
+    const exams = await getAll('exams');
+
+    const activityAvg1 = await calculateActivityAverage(student.id, 1);
+    const activityAvg2 = await calculateActivityAverage(student.id, 2);
+    const examAvg1 = await calculateExamAverage(student.id, 1);
+    const examAvg2 = await calculateExamAverage(student.id, 2);
+    const finalAvg1 = await calculateFinalAverage(student.id, 1);
+    const finalAvg2 = await calculateFinalAverage(student.id, 2);
+
+    let annualActivity = null, annualExams = null, annualFinal = null;
+    let actCount = 0, exCount = 0, finCount = 0;
+    if (activityAvg1 !== null) { annualActivity = (annualActivity || 0) + activityAvg1; actCount++; }
+    if (activityAvg2 !== null) { annualActivity = (annualActivity || 0) + activityAvg2; actCount++; }
+    if (actCount > 0) annualActivity = Math.round((annualActivity / actCount) * 100) / 100;
+    if (examAvg1 !== null) { annualExams = (annualExams || 0) + examAvg1; exCount++; }
+    if (examAvg2 !== null) { annualExams = (annualExams || 0) + examAvg2; exCount++; }
+    if (exCount > 0) annualExams = Math.round((annualExams / exCount) * 100) / 100;
+    if (finalAvg1 !== null) { annualFinal = (annualFinal || 0) + finalAvg1; finCount++; }
+    if (finalAvg2 !== null) { annualFinal = (annualFinal || 0) + finalAvg2; finCount++; }
+    if (finCount > 0) annualFinal = Math.round((annualFinal / finCount) * 100) / 100;
+
+    const studentEvals = evaluations.filter(e => e.studentId == student.id).map(e => {
+        const sess = sessions.find(s => s.id == e.sessionId);
+        return { ...e, session: sess };
+    }).sort((a, b) => {
+        if (!a.session || !b.session) return 0;
+        const d = new Date(b.session.sessionDate) - new Date(a.session.sessionDate);
+        return d !== 0 ? d : b.session.sessionNumber - a.session.sessionNumber;
+    });
+
+    const studentExams = exams.filter(e => e.studentId == student.id).sort((a, b) => {
+        if (a.trimester !== b.trimester) return a.trimester - b.trimester;
+        return a.examNumber - b.examNumber;
+    });
+
+    container.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">تقرير المتعلم</h1>
+                <p class="page-subtitle">${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</p>
+            </div>
+        </div>
+
+        <div class="btn-group" style="margin-bottom:16px;">
+            <button class="btn btn-primary" onclick="currentStudentId=null;renderReports(document.getElementById('mainContent'))"><i class="fas fa-arrow-right"></i> العودة</button>
+            <button class="btn btn-info" onclick="window.print()"><i class="fas fa-print"></i> طباعة</button>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-user"></i> المعلومات</h3></div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item"><label>النسب والاسم</label><span>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</span></div>
+                    <div class="info-item"><label>رقم مسار</label><span>${escapeHtml(student.massarNumber)}</span></div>
+                    <div class="info-item"><label>القسم</label><span>${escapeHtml(cls ? cls.className : '-')}</span></div>
+                    <div class="info-item"><label>الرقم الترتيبي</label><span>${student.orderNumber}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chart-line"></i> المعدلات</h3></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <h4 class="section-title">الأسدوس الأول</h4>
+                        <div class="info-grid">
+                            <div class="info-item"><label>معدل الأنشطة</label><span>${renderScoreBig(activityAvg1)}</span></div>
+                            <div class="info-item"><label>معدل الفروض</label><span>${renderScoreBig(examAvg1)}</span></div>
+                            <div class="info-item"><label>المعدل النهائي</label><span>${renderScoreBig(finalAvg1)}</span></div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="section-title">الأسدوس الثاني</h4>
+                        <div class="info-grid">
+                            <div class="info-item"><label>معدل الأنشطة</label><span>${renderScoreBig(activityAvg2)}</span></div>
+                            <div class="info-item"><label>معدل الفروض</label><span>${renderScoreBig(examAvg2)}</span></div>
+                            <div class="info-item"><label>المعدل النهائي</label><span>${renderScoreBig(finalAvg2)}</span></div>
+                        </div>
+                    </div>
+                </div>
+                <h4 class="section-title">السنوي</h4>
+                <div class="info-grid">
+                    <div class="info-item"><label>معدل الأنشطة</label><span>${renderScoreBig(annualActivity)}</span></div>
+                    <div class="info-item"><label>معدل الفروض</label><span>${renderScoreBig(annualExams)}</span></div>
+                    <div class="info-item"><label>المعدل النهائي</label><span>${renderScoreBig(annualFinal)}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-clipboard-list"></i> التقييمات</h3></div>
+            <div class="card-body" style="padding:12px;">
+                ${studentEvals.length === 0 ? '<div class="alert alert-info">لا توجد تقييمات</div>' : `
+                    <div class="table-responsive">
+                        <table style="font-size:0.78rem;">
+                            <thead><tr><th>التاريخ</th><th>حصة</th><th>أسدوس</th><th>دفتر</th><th>مشاركة</th><th>واجبات</th><th>شفوي</th></tr></thead>
+                            <tbody>
+                                ${studentEvals.map(e => `
+                                    <tr>
+                                        <td>${e.session ? e.session.sessionDate : '-'}</td>
+                                        <td>${e.session ? e.session.sessionNumber : '-'}</td>
+                                        <td><span class="badge badge-primary">${e.session && e.session.trimester == 1 ? '1' : '2'}</span></td>
+                                        <td>${renderEvalCell(e.notebook)}</td>
+                                        <td>${renderEvalCell(e.participation)}</td>
+                                        <td>${renderEvalCell(e.homework)}</td>
+                                        <td>${renderEvalCell(e.oral)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-edit"></i> الفروض</h3></div>
+            <div class="card-body" style="padding:12px;">
+                ${studentExams.length === 0 ? '<div class="alert alert-info">لا توجد فروض</div>' : `
+                    <div class="table-responsive">
+                        <table style="font-size:0.85rem;">
+                            <thead><tr><th>الأسدوس</th><th>الفرض</th><th>النقطة</th></tr></thead>
+                            <tbody>
+                                ${studentExams.map(e => `
+                                    <tr>
+                                        <td><span class="badge badge-primary">${e.trimester == 1 ? 'الأول' : 'الثاني'}</span></td>
+                                        <td>الفرض ${e.examNumber}</td>
+                                        <td><span class="score-display ${e.score >= 16 ? 'score-excellent' : e.score >= 12 ? 'score-good' : e.score >= 10 ? 'score-average' : 'score-poor'}">${e.score}/20</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+function renderScoreBig(score) {
+    if (score === null) return '<span style="color:var(--gray);font-size:0.9rem;">غير محتسب</span>';
+    const cls = score >= 16 ? 'score-excellent' : score >= 12 ? 'score-good' : score >= 10 ? 'score-average' : 'score-poor';
+    return `<span class="score-display ${cls}" style="font-size:1.3rem;">${score}<small style="font-size:0.7rem;">/20</small></span>`;
+}
+
+function renderEvalCell(val) {
+    if (val === '+') return '<span style="color:var(--success);font-weight:700;">+</span>';
+    if (val === '-') return '<span style="color:var(--danger);font-weight:700;">-</span>';
+    return '<span style="color:var(--gray);">-</span>';
+}
+
+async function renderClassReport(container) {
+    const cls = await getById('classes', currentClassId);
+    if (!cls) { currentClassId = null; return renderReports(container); }
+
+    const students = (await getAll('students')).filter(s => s.classId == currentClassId).sort((a, b) => a.orderNumber - b.orderNumber);
+    const sessions = (await getAll('sessions')).filter(s => s.classId == currentClassId);
+    const evaluations = await getAll('evaluations');
+    const exams = await getAll('exams');
+
+    const studentStats = await Promise.all(students.map(async s => {
+        const activityAvg1 = await calculateActivityAverage(s.id, 1);
+        const activityAvg2 = await calculateActivityAverage(s.id, 2);
+        const examAvg1 = await calculateExamAverage(s.id, 1);
+        const examAvg2 = await calculateExamAverage(s.id, 2);
+        const finalAvg1 = await calculateFinalAverage(s.id, 1);
+        const finalAvg2 = await calculateFinalAverage(s.id, 2);
+
+        const evals = evaluations.filter(e => e.studentId == s.id);
+        const sessionIds = sessions.map(ses => ses.id);
+        const studentEvals = evals.filter(e => sessionIds.includes(e.sessionId));
+        let plusCount = 0, minusCount = 0;
+        studentEvals.forEach(e => {
+            ['notebook', 'participation', 'homework', 'oral'].forEach(cat => {
+                if (e[cat] === '+') plusCount++;
+                if (e[cat] === '-') minusCount++;
+            });
+        });
+
+        return { student: s, activityAvg1, activityAvg2, examAvg1, examAvg2, finalAvg1, finalAvg2, plusCount, minusCount };
+    }));
+
+    const validFinal1 = studentStats.filter(s => s.finalAvg1 !== null);
+    const validFinal2 = studentStats.filter(s => s.finalAvg2 !== null);
+    const classFinal1 = validFinal1.length > 0 ? Math.round((validFinal1.reduce((a, b) => a + b.finalAvg1, 0) / validFinal1.length) * 100) / 100 : null;
+    const classFinal2 = validFinal2.length > 0 ? Math.round((validFinal2.reduce((a, b) => a + b.finalAvg2, 0) / validFinal2.length) * 100) / 100 : null;
+
+    container.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">تقرير القسم</h1>
+                <p class="page-subtitle">${escapeHtml(cls.className)}</p>
+            </div>
+        </div>
+
+        <div class="btn-group" style="margin-bottom:16px;">
+            <button class="btn btn-primary" onclick="currentClassId=null;renderReports(document.getElementById('mainContent'))"><i class="fas fa-arrow-right"></i> العودة</button>
+            <button class="btn btn-info" onclick="window.print()"><i class="fas fa-print"></i> طباعة</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-users"></i></div><div class="stat-info"><h4>${students.length}</h4><p>المتعلمين</p></div></div>
+            <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-calendar-check"></i></div><div class="stat-info"><h4>${sessions.length}</h4><p>الحصص</p></div></div>
+            <div class="stat-card"><div class="stat-icon green"><i class="fas fa-plus-circle"></i></div><div class="stat-info"><h4>${studentStats.reduce((a, b) => a + b.plusCount, 0)}</h4><p>إيجابيات</p></div></div>
+            <div class="stat-card"><div class="stat-icon red"><i class="fas fa-minus-circle"></i></div><div class="stat-info"><h4>${studentStats.reduce((a, b) => a + b.minusCount, 0)}</h4><p>سلبيات</p></div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chart-line"></i> معدلات القسم</h3></div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item"><label>معدل الأسدوس الأول</label><span>${renderScoreBig(classFinal1)}</span></div>
+                    <div class="info-item"><label>معدل الأسدوس الثاني</label><span>${renderScoreBig(classFinal2)}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-list-ol"></i> المتعلمين</h3></div>
+            <div class="card-body" style="padding:12px;">
+                <div class="table-responsive">
+                    <table style="font-size:0.75rem;">
+                        <thead>
+                            <tr>
+                                <th>ر.ت</th><th style="text-align:right;">النسب والاسم</th>
+                                <th>أنشطة 1</th><th>أنشطة 2</th>
+                                <th>فروض 1</th><th>فروض 2</th>
+                                <th>نهائي 1</th><th>نهائي 2</th>
+                                <th>+</th><th>-</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${studentStats.map(st => `
+                                <tr>
+                                    <td>${st.student.orderNumber}</td>
+                                    <td style="text-align:right;font-weight:600;">${escapeHtml(st.student.lastName)} ${escapeHtml(st.student.firstName.substring(0, 8))}</td>
+                                    <td>${renderScore(st.activityAvg1)}</td>
+                                    <td>${renderScore(st.activityAvg2)}</td>
+                                    <td>${renderScore(st.examAvg1)}</td>
+                                    <td>${renderScore(st.examAvg2)}</td>
+                                    <td>${renderScore(st.finalAvg1)}</td>
+                                    <td>${renderScore(st.finalAvg2)}</td>
+                                    <td><span class="badge badge-success">${st.plusCount}</span></td>
+                                    <td><span class="badge badge-danger">${st.minusCount}</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-chart-pie"></i> رسم بياني</h3></div>
+            <div class="card-body">
+                <div class="chart-container"><canvas id="classChart"></canvas></div>
+            </div>
+        </div>
+    `;
+
+    setTimeout(() => {
+        const ctx = document.getElementById('classChart');
+        if (!ctx) return;
+        const labels = studentStats.map(s => s.student.lastName + ' ' + s.student.firstName.substring(0, 3));
+        const data1 = studentStats.map(s => s.finalAvg1 !== null ? s.finalAvg1 : 0);
+        const data2 = studentStats.map(s => s.finalAvg2 !== null ? s.finalAvg2 : 0);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'الأسدوس الأول', data: data1, backgroundColor: 'rgba(26, 95, 122, 0.7)', borderColor: '#1a5f7a', borderWidth: 1 },
+                    { label: 'الأسدوس الثاني', data: data2, backgroundColor: 'rgba(232, 184, 109, 0.7)', borderColor: '#e8b86d', borderWidth: 1 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top', labels: { font: { family: 'Noto Sans Arabic', size: 11 } } } },
+                scales: {
+                    y: { beginAtZero: true, max: 20, ticks: { font: { size: 10 } } },
+                    x: { ticks: { font: { family: 'Noto Sans Arabic', size: 9 } } }
+                }
+            }
+        });
+    }, 100);
+}
+
+async function renderSettings(container) {
+    const year = await getSetting('academic_year') || '2025/2026';
+    const trim = await getSetting('current_trimester') || '1';
+
+    container.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">الإعدادات</h1>
+                <p class="page-subtitle">إعدادات النظام</p>
+            </div>
+        </div>
+        <div id="settingsAlert"></div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-cog"></i> العامة</h3></div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">السنة الدراسية</label>
+                    <input type="text" id="settingYear" class="form-control" value="${year}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">الأسدوس الحالي</label>
+                    <select id="settingTrimester" class="form-control">
+                        <option value="1" ${trim == '1' ? 'selected' : ''}>الأول</option>
+                        <option value="2" ${trim == '2' ? 'selected' : ''}>الثاني</option>
+                    </select>
+                </div>
+                <button class="btn btn-success btn-lg" onclick="saveSettings()">
+                    <i class="fas fa-save"></i> حفظ
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-database"></i> البيانات</h3></div>
+            <div class="card-body">
+                <button class="btn btn-primary btn-lg" style="margin-bottom:8px;" onclick="exportData()">
+                    <i class="fas fa-download"></i> تصدير JSON
+                </button>
+                <input type="file" id="importDataFile" accept=".json" style="display:none;" onchange="importData(this)">
+                <button class="btn btn-warning btn-lg" style="margin-bottom:8px;" onclick="document.getElementById('importDataFile').click()">
+                    <i class="fas fa-upload"></i> استيراد JSON
+                </button>
+                <button class="btn btn-danger btn-lg" onclick="clearAllData()">
+                    <i class="fas fa-trash-alt"></i> حذف الكل
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+async function saveSettings() {
+    await setSetting('academic_year', document.getElementById('settingYear').value);
+    await setSetting('current_trimester', document.getElementById('settingTrimester').value);
+    showAlert('settingsAlert', 'success', 'تم الحفظ!');
+    document.getElementById('headerSubtitle').textContent = 'السنة الدراسية ' + document.getElementById('settingYear').value;
+}
+
+async function exportData() {
+    const data = {
+        classes: await getAll('classes'), students: await getAll('students'),
+        sessions: await getAll('sessions'), evaluations: await getAll('evaluations'),
+        exams: await getAll('exams'), settings: await getAll('settings'),
+        exportDate: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'student_tracker_' + new Date().toISOString().split('T')[0] + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function importData(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!confirm('استبدال جميع البيانات؟')) return;
+            const stores = ['classes', 'students', 'sessions', 'evaluations', 'exams', 'settings'];
+            for (const store of stores) {
+                const all = await getAll(store);
+                for (const item of all) await deleteById(store, item.id);
+            }
+            for (const item of data.classes || []) await add('classes', item);
+            for (const item of data.students || []) await add('students', item);
+            for (const item of data.sessions || []) await add('sessions', item);
+            for (const item of data.evaluations || []) await add('evaluations', item);
+            for (const item of data.exams || []) await add('exams', item);
+            for (const item of data.settings || []) await put('settings', item);
+            showAlert('settingsAlert', 'success', 'تم الاستيراد!');
+            showPage('dashboard');
+        } catch (err) {
+            showAlert('settingsAlert', 'danger', 'خطأ: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
+async function clearAllData() {
+    if (!confirm('حذف جميع البيانات؟ لا يمكن التراجع!')) return;
+    const stores = ['classes', 'students', 'sessions', 'evaluations', 'exams', 'settings'];
+    for (const store of stores) {
+        const all = await getAll(store);
+        for (const item of all) await deleteById(store, item.id);
+    }
+    await initSettings();
+    showAlert('settingsAlert', 'success', 'تم الحذف!');
+    showPage('dashboard');
+}
+
+// Helper functions
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function renderScore(score) {
+    if (score === null) return '<span style="color:var(--gray);font-size:0.8rem;">-</span>';
+    const cls = score >= 16 ? 'score-excellent' : score >= 12 ? 'score-good' : score >= 10 ? 'score-average' : 'score-poor';
+    return `<span class="score-display ${cls}" style="font-size:0.85rem;">${score}</span>`;
+}
+
+function viewStudentReport(studentId) {
+    currentStudentId = studentId;
+    currentClassId = null;
+    showPage('reports');
+}
+
+function viewClassReport(classId) {
+    currentClassId = classId;
+    currentStudentId = null;
+    showPage('reports');
+}
+
+// Initialize
+async function init() {
+    await openDB();
+    await initSettings();
+    renderPage('dashboard');
+}
+
+init();
+    </script>
+</body>
+
+</html>
